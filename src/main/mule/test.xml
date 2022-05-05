@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="560b88ae-c39c-4a71-9695-57092b53f116" >
+		<file:connection workingDir="E:/Rohan/Workspace/AnypointStudio/studio-workspace/test" />
+	</file:config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="a03b80fb-375a-4632-9d31-3a0422fab068" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="17d4f6a7-d9c9-4725-ad39-7a1397ade08a" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root" database="cust" />
+	</db:config>
+	<db:config name="Database_Config1" doc:name="Database Config" doc:id="9995c06b-bf7e-4b2f-a554-db401315fee5" >
+		<db:my-sql-connection host="database-1.cvmsc1urbsp9.us-east-1.rds.amazonaws.com" port="3306" user="admin" password="Mulesoft" database="ORDER_MANAGEMENT" />
+	</db:config>
+	<file:config name="File_Config1" doc:name="File Config" doc:id="b5060e7f-c3f1-4bdb-be55-6c8a6e37b116" >
+		<file:connection workingDir="E:\Rohan\Workspace\AnypointStudio\studio-workspace\test\src\main\resources" />
+	</file:config>
+	<file:config name="File_Config2" doc:name="File Config" doc:id="28f1ad6b-c66d-48c0-ae25-1da5199fc11e" >
+		<file:connection workingDir="${mule.home}/apps/${app.name}/" />
+	</file:config>
+	<flow name="testFlow" doc:id="a4bccf98-dfc5-4ef8-b57a-6d993dcde722" >
+		<http:listener doc:id="8a99abd8-8af1-4383-a9d1-7f77129d5d82" config-ref="HTTP_Listener_config" path="/file/{id}"/>
+		<set-variable value="#[attributes.uriParams.'id']" doc:name="Set Variable" doc:id="9447994e-d1a3-45b4-abc9-1963a112c0cb" variableName="custId"/>
+		<file:read doc:name="Read" doc:id="9589da8e-ff8f-4ece-975c-b54f747aa9fd" config-ref="File_Config1" path="accounts.csv"/>
+		<ee:transform doc:name="Transform Message" doc:id="01987436-75b7-4590-95d0-049d85a1f970" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload filter ((item, index) -> 
+item.CustId == vars.CustId
+)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="testFlow1" doc:id="aacebf66-2529-4d40-be73-0fd291f32f5b" >
+		<http:listener doc:name="Listener" doc:id="6679a575-f31b-4249-9756-b710b742dcfb" config-ref="HTTP_Listener_config" path="/db1/{id}"/>
+		<set-variable value="#[attributes.uriParams.'id']" doc:name="Set Variable" doc:id="cd1ffc6d-3cd7-4f95-b470-f0a9303a2f4f" variableName="custId"/>
+		<db:select doc:name="Select" doc:id="74e445a3-3b58-4938-9d12-533f7605a7fb" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM cust.custo where custId = :custId;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{"custId": vars.custId}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="0f4ee5d6-b22c-4e1e-8210-5d628ce763cf" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="testFlow2" doc:id="a7d09473-e8e9-4fa5-878b-700fde18bd05" >
+		<http:listener doc:name="Listener" doc:id="287268e9-194d-462d-9d1b-fd5242453345" config-ref="HTTP_Listener_config" path="/db/{cid}"/>
+		<set-variable value="#[attributes.uriParams.'cid']" doc:name="Set Variable" doc:id="83d745fd-7b40-42aa-9088-e72407cf6a10" variableName="customerId"/>
+		<db:select doc:name="Select" doc:id="ff95a611-7639-476f-9a5c-507ea481f52d" config-ref="Database_Config1">
+			<db:sql ><![CDATA[select * from Customers where customerId = :customerId;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{"customerId": vars.customerId}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="13d79323-6645-481f-9dd0-ad987ec44022" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="Copy_of_testFlow" doc:id="583d585f-fbe4-48a9-beed-a0589caf591a" >
+		<http:listener doc:name="Copy_of_Listener" doc:id="0fed13c0-e044-406b-9861-ef776eb42507" config-ref="HTTP_Listener_config" path="/file1/{id}" />
+		<set-variable value="#[attributes.uriParams.'id']" doc:name="Copy_of_Set Variable" doc:id="f0da55bc-7766-4250-bbcb-0dfd9f9ada9a" variableName="custId" />
+		<file:read doc:name="Read" doc:id="67f76a80-3589-4420-bde0-60f69bb44560" path="tmp/accounts.csv" config-ref="File_Config2"/>
+		<ee:transform doc:name="Copy_of_Transform Message" doc:id="2ecbe06a-54b4-49a1-9233-b95a028c45ba" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload filter ((item, index) -> 
+item.CustId == vars.CustId
+)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
